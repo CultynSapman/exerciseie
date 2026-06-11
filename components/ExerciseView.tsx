@@ -170,6 +170,18 @@ export function ExerciseView({ id }: { id: string }) {
           loop
           className="max-h-[28rem] w-full rounded-lg border border-zinc-800 bg-black"
         />
+      ) : exercise.images.length > 0 ? (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {exercise.images.map((_, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={`/api/exercises/${id}/image/${i}`}
+              alt={`${exercise.name} — position ${i + 1}`}
+              className="w-full rounded-lg border border-zinc-800 bg-white object-contain"
+            />
+          ))}
+        </div>
       ) : (
         <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-500">
           No video clip for this exercise
@@ -177,7 +189,7 @@ export function ExerciseView({ id }: { id: string }) {
       )}
 
       <div className="text-xs text-zinc-500">
-        Imported from{" "}
+        Source:{" "}
         <a
           href={exercise.sourceUrl}
           target="_blank"
@@ -189,6 +201,13 @@ export function ExerciseView({ id }: { id: string }) {
         {exercise.sourceUploader && <> by {exercise.sourceUploader}</>} ·{" "}
         {new Date(exercise.createdAt).toLocaleDateString()}
         {exercise.aliases.length > 0 && <> · also known as: {exercise.aliases.join(", ")}</>}
+        {exercise.license && (
+          <>
+            {" "}
+            · {exercise.licenseAuthor ? `${exercise.licenseAuthor}, ` : ""}
+            {exercise.license}
+          </>
+        )}
       </div>
 
       <label className="block text-xs text-zinc-400">

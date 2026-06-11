@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
+import path from "node:path";
 import { Readable } from "node:stream";
+
+const IMAGE_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+};
+
+export function imageContentType(fileName: string): string {
+  return IMAGE_TYPES[path.extname(fileName).toLowerCase()] ?? "application/octet-stream";
+}
 
 /** Stream a file with HTTP Range support (needed for <video> seeking). */
 export function streamFile(

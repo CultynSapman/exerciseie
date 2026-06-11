@@ -2,21 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { LibraryExercise, Taxonomy } from "@/lib/types";
+import type { LibraryExercise, Taxonomy, Workout } from "@/lib/types";
+
+interface TodayData {
+  workout: Workout | null;
+  needsProfile: boolean;
+  poolSize: number;
+}
 
 export default function LibraryPage() {
   const [exercises, setExercises] = useState<LibraryExercise[] | null>(null);
   const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
+  const [today, setToday] = useState<TodayData | null>(null);
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [muscle, setMuscle] = useState("");
   const [equipment, setEquipment] = useState("");
+  const [source, setSource] = useState("");
   const [favOnly, setFavOnly] = useState(false);
 
   useEffect(() => {
     fetch("/api/taxonomy")
       .then((r) => r.json())
       .then(setTaxonomy)
+      .catch(() => {});
+    fetch("/api/today")
+      .then((r) => r.json())
+      .then(setToday)
       .catch(() => {});
   }, []);
 
@@ -26,6 +38,7 @@ export default function LibraryPage() {
     if (category) params.set("category", category);
     if (muscle) params.set("muscle", muscle);
     if (equipment) params.set("equipment", equipment);
+    if (source) params.set("source", source);
     if (favOnly) params.set("favorite", "true");
 
     // small debounce so typing in search doesn't fire a request per keystroke
@@ -36,7 +49,7 @@ export default function LibraryPage() {
         .catch(() => {});
     }, 250);
     return () => clearTimeout(t);
-  }, [q, category, muscle, equipment, favOnly]);
+  }, [q, category, muscle, equipment, source, favOnly]);
 
   async function toggleFavorite(ex: LibraryExercise) {
     setExercises((prev) =>
@@ -54,6 +67,31 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-6">
+      {today?.workout && (
+        <Link
+          href="/today"
+          className="flex items-center justify-between gap-3 rounded-xl border border-sky-900 bg-sky-950/40 px-4 py-3 transition-colors hover:border-sky-700"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-sky-200">
+              Today: {today.workout.dayLabel} — {today.workout.focusGroups.join(", ")}
+            </p>
+            <p className="truncate text-xs text-zinc-400">
+              {today.workout.items.length} exercises ·{" "}
+              {today.workout.items.filter((i) => i.done).length} done
+            </p>
+          </div>
+          <span className="whitespace-nowrap text-sm text-sky-300">Start →</span>
+        </Link>
+      )}
+      {today?.needsProfile && (
+        <Link
+          href="/settings"
+          className="block rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 transition-colors hover:border-zinc-500"
+        >
+          🏋️ Set up your training profile to get a generated workout every day →
+        </Link>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="search"
@@ -89,6 +127,12 @@ export default function LibraryPage() {
               {e}
             </option>
           ))}
+        </select>
+        <select value={source} onChange={(e) => setSource(e.target.value)} className={selectClass}>
+          <option value="">All sources</option>
+          <option value="video">My videos</option>
+          <option value="free-exercise-db">Catalog (free-exercise-db)</option>
+          <option value="wger">Catalog (wger.de)</option>
         </select>
         <button
           type="button"

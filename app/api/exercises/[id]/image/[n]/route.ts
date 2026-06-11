@@ -6,18 +6,20 @@ import { imageContentType, streamFile } from "@/lib/stream";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; n: string }> }
 ) {
-  const { id } = await params;
+  const { id, n } = await params;
   const exercise = getExercise(id);
-  if (!exercise?.thumbFile) {
-    return NextResponse.json({ error: "No thumbnail for this exercise" }, { status: 404 });
+  const index = Number.parseInt(n, 10);
+  const file = exercise?.images[index];
+  if (!file) {
+    return NextResponse.json({ error: "No such image" }, { status: 404 });
   }
   const filePath = path.join(
     config.dataDir,
     "exercises",
     path.basename(id),
-    path.basename(exercise.thumbFile)
+    path.basename(file)
   );
-  return streamFile(req, filePath, imageContentType(exercise.thumbFile));
+  return streamFile(req, filePath, imageContentType(file));
 }

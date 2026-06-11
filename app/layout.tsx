@@ -21,12 +21,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 your exercise library, built from social videos
               </span>
             </div>
-            <nav className="flex gap-2 text-sm">
+            <nav className="flex items-center gap-1 text-sm">
+              <Link
+                href="/today"
+                className="rounded-lg px-3 py-1.5 font-medium text-zinc-300 hover:bg-zinc-800"
+              >
+                Today
+              </Link>
               <Link
                 href="/"
                 className="rounded-lg px-3 py-1.5 font-medium text-zinc-300 hover:bg-zinc-800"
               >
                 Library
+              </Link>
+              <Link
+                href="/settings"
+                className="rounded-lg px-3 py-1.5 font-medium text-zinc-300 hover:bg-zinc-800"
+                title="Settings"
+              >
+                ⚙
               </Link>
               <Link
                 href="/import"

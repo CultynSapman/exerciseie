@@ -56,6 +56,8 @@ export interface Job {
   updatedAt: string;
 }
 
+export type ExerciseSource = "video" | "free-exercise-db" | "wger";
+
 export interface LibraryExercise {
   id: string;
   name: string;
@@ -74,6 +76,15 @@ export interface LibraryExercise {
   thumbFile: string | null;
   wgerId: number | null;
   wgerUrl: string | null;
+  source: ExerciseSource;
+  /** Local image filenames under DATA_DIR/exercises/<id>/ */
+  images: string[];
+  force: string | null;
+  mechanic: string | null;
+  level: string | null;
+  license: string | null;
+  licenseAuthor: string | null;
+  catalogKey: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,6 +95,61 @@ export interface ExerciseFilters {
   muscle?: string;
   equipment?: string;
   favorite?: boolean;
+  source?: ExerciseSource;
+}
+
+// ------------------------------------------------------------ training
+
+export type Goal = "strength" | "hypertrophy" | "endurance" | "general";
+export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
+
+export interface Profile {
+  goal: Goal;
+  level: ExperienceLevel;
+  daysPerWeek: number;
+  sessionMinutes: number;
+  /** Equipment the user has access to (taxonomy names); bodyweight is always available */
+  equipment: string[];
+  updatedAt: string;
+}
+
+export interface WorkoutItem {
+  exerciseId: string;
+  name: string;
+  /** Muscle groups this item credits (primary first) */
+  groups: string[];
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  restSec: number;
+  rir: number;
+  done: boolean;
+}
+
+export type WorkoutStatus = "planned" | "completed" | "skipped";
+
+export interface Workout {
+  id: string;
+  /** Position in the rolling split rotation */
+  seq: number;
+  dayLabel: string;
+  focusGroups: string[];
+  items: WorkoutItem[];
+  rationale: string;
+  status: WorkoutStatus;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface CatalogProgress {
+  source: ExerciseSource;
+  status: "idle" | "running" | "done" | "error";
+  total: number;
+  done: number;
+  imported: number;
+  skipped: number;
+  errors: string[];
+  finishedAt: string | null;
 }
 
 export interface Taxonomy {

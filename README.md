@@ -1,6 +1,8 @@
 # 🏋️ Exerciseie
 
-**Mealie, but for exercise videos.** A self-hosted library of exercises built from the fitness videos you find on social media — with the [social-to-mealie](https://github.com/GerardPolloRebozado/social-to-mealie)-style importer built in.
+**Mealie, but for exercise videos — plus a coach.** A self-hosted exercise library built from the fitness videos you find on social media, seeded with 1,700+ catalog exercises, and a science-based routine generator that tells you what to train every day.
+
+## Import from social media
 
 Paste a TikTok / Instagram Reel / YouTube Short link, and Exerciseie:
 
@@ -9,9 +11,27 @@ Paste a TikTok / Instagram Reel / YouTube Short link, and Exerciseie:
 3. shows a **review screen** where you edit anything and get warned about duplicates already in your library,
 4. cuts each demonstration into its own **video clip** with ffmpeg and saves everything to **your library**.
 
-The library is the app: browse a card grid of your exercises, full-text search, filter by category / muscle / equipment, favorite the keepers, and open any exercise to watch its clip and read the form cues.
+## A real library
 
-Optionally, any exercise can be **exported to [wger](https://github.com/wger-project/wger)** (exercise + description + video clip) with one click if you run an instance.
+Browse a card grid of your exercises, full-text search, filter by category / muscle / equipment / source, favorite the keepers, and open any exercise to watch its clip or step-by-step photos.
+
+Seed it in one click from Settings with two catalogs (safe to re-run; duplicates are skipped):
+
+- **[free-exercise-db](https://github.com/yuhonas/free-exercise-db)** — ~870 exercises, 2 demo photos + numbered instructions each, public domain.
+- **wger.de community database** — ~1,000 exercises from the [wger](https://github.com/wger-project/wger) project (CC-BY-SA 4.0; attribution is stored and shown on every imported exercise).
+
+## Daily workouts (the coach)
+
+Set your **goal** (strength / hypertrophy / endurance / general), **experience level**, **days per week**, **session length** and **available equipment** — the generator plans every session with a deterministic rules engine grounded in published meta-analyses (no LLM, fully explainable; every workout shows its "why"):
+
+- **Splits**: 2–3 days → full body, 4 → upper/lower, 5–6 → push/pull/legs; every major muscle group lands on ≥2 days per cycle (training a muscle 2×/week beats 1×/week at equal volume — Schoenfeld et al. 2016).
+- **Volume**: weekly set targets per muscle group (~10–16 hard sets for major groups by level, smaller targets for minor ones), tracked over your trailing 7 days of *completed* work.
+- **Prescriptions**: goal-based rep ranges (strength 3–6, hypertrophy 6–12, endurance 12–20), rest times, and a reps-in-reserve target so sets stay close to failure where effective volume lives.
+- **Variety**: a recency penalty rotates exercise selection between sessions, a "neglect boost" pulls in whichever groups are behind target (that's how rear delts, forearms, calves and adductors don't get forgotten), favorites get picked more often, and any exercise can be swapped with one tap.
+
+The **Today** page is rolling: open the app any day and it shows your next session in the rotation — check off exercises, finish or skip, and the next one is ready. Miss a day and nothing breaks.
+
+Optionally, any exercise can still be **exported to wger** (exercise + description + video clip) with one click if you run an instance.
 
 ## Setup
 
