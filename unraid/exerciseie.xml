@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Exerciseie</Name>
+  <Repository>ghcr.io/cultynsapman/exerciseie:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/CultynSapman/exerciseie/issues</Support>
+  <Project>https://github.com/CultynSapman/exerciseie</Project>
+  <Overview>Mealie, but for exercise videos. Paste a TikTok / Instagram Reel / YouTube Short link; yt-dlp downloads it, Gemini extracts every demonstrated exercise (name, form cues, muscles, equipment), you review, and each exercise is saved to your self-hosted library with its own video clip. Optional one-click export to a wger instance.</Overview>
+  <Category>MediaApp:Video Tools:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/CultynSapman/exerciseie/main/unraid/exerciseie.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/CultynSapman/exerciseie/main/app/icon.svg</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>A free Google AI Studio API key (https://aistudio.google.com/apikey).</Requires>
+  <Config Name="WebUI Port" Target="3000" Default="3000" Mode="tcp" Description="Port for the web interface" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Library data" Target="/data" Default="/mnt/user/appdata/exerciseie" Mode="rw" Description="Database, video clips and thumbnails — this is your whole library, back it up" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/exerciseie</Config>
+  <Config Name="GEMINI_API_KEY" Target="GEMINI_API_KEY" Default="" Description="Google AI Studio API key (required)" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="GEMINI_MODEL" Target="GEMINI_MODEL" Default="gemini-2.5-flash" Description="Gemini model used for video analysis (must support video input)" Type="Variable" Display="advanced" Required="false" Mask="false">gemini-2.5-flash</Config>
+  <Config Name="EXTRA_PROMPT" Target="EXTRA_PROMPT" Default="" Description="Extra instructions for the extraction prompt, e.g. a language preference" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="AUTO_SAVE" Target="AUTO_SAVE" Default="false" Description="true = skip the review screen and save extracted exercises directly" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="WGER_URL" Target="WGER_URL" Default="" Description="Optional: URL of your wger instance to enable the 'Send to wger' export button" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="WGER_API_KEY" Target="WGER_API_KEY" Default="" Description="Optional: wger API key (account must be allowed to contribute exercises)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="YTDLP_COOKIES_FILE" Target="YTDLP_COOKIES_FILE" Default="" Description="Optional: path inside the container to a Netscape-format cookies file (mount it under /data and use e.g. /data/cookies.txt) — often needed for Instagram" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>

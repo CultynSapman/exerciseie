@@ -1,0 +1,23 @@
+services:
+  exerciseie:
+    # Use the prebuilt image…
+    image: ghcr.io/cultynsapman/exerciseie:latest
+    # …or comment the line above and uncomment this to build from source:
+    # build: .
+    container_name: exerciseie
+    ports:
+      - "3000:3000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - EXTRA_PROMPT=${EXTRA_PROMPT:-}
+      - AUTO_SAVE=${AUTO_SAVE:-false}
+      # Optional wger export:
+      - WGER_URL=${WGER_URL:-}
+      - WGER_API_KEY=${WGER_API_KEY:-}
+      # Uncomment (and mount the file below) if Instagram needs login cookies:
+      # - YTDLP_COOKIES_FILE=/config/cookies.txt
+    volumes:
+      - ./data:/data
+      # - ./cookies.txt:/config/cookies.txt:ro
+    restart: unless-stopped
