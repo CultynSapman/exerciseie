@@ -95,6 +95,11 @@ async function toExtractedExercise(
     ];
   };
 
+  const oneOf = (value: unknown, allowed: string[]): string | null => {
+    const v = normalize(String(value ?? ""));
+    return allowed.includes(v) ? v : null;
+  };
+
   return {
     name,
     aliases: Array.isArray(r.aliases) ? r.aliases.map(String) : [],
@@ -103,6 +108,9 @@ async function toExtractedExercise(
     primaryMuscles: muscles(r.primaryMuscles),
     secondaryMuscles: muscles(r.secondaryMuscles),
     equipment: equipment(r.equipment),
+    mechanic: oneOf(r.mechanic, ["compound", "isolation"]),
+    force: oneOf(r.force, ["push", "pull", "static"]),
+    level: oneOf(r.level, ["beginner", "intermediate", "advanced"]),
     startSec,
     endSec,
     matches: name ? await findMatches(name) : [],
@@ -171,6 +179,9 @@ async function saveExercises(id: string, exercises: ExtractedExercise[]): Promis
           primaryMuscles: ex.primaryMuscles,
           secondaryMuscles: ex.secondaryMuscles,
           equipment: ex.equipment,
+          mechanic: ex.mechanic,
+          force: ex.force,
+          level: ex.level,
           sourceUrl: job.metadata?.webpageUrl ?? job.url,
           sourceTitle: job.metadata?.title ?? "",
           sourceUploader: job.metadata?.uploader ?? "",

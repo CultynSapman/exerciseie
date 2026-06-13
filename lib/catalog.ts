@@ -4,10 +4,13 @@ import crypto from "node:crypto";
 import { config } from "./config";
 import {
   catalogKeyExists,
+  deleteExercise,
   exerciseNameExists,
   getSetting,
   insertExercise,
+  listExercises,
   setSetting,
+  updateExercise,
 } from "./db";
 import { canonicalMuscle, muscleGroupOf, EQUIPMENT } from "./taxonomy";
 import type { CatalogProgress, ExerciseSource } from "./types";
@@ -243,7 +246,9 @@ async function importFreeExerciseDb(progress: CatalogProgress): Promise<void> {
             entry.category === "cardio" ? "Cardio" : categoryFromMuscles(primaryMuscles),
           primaryMuscles,
           secondaryMuscles,
-          equipment: entry.equipment ? FEDB_EQUIPMENT[entry.equipment.toLowerCase()] ?? [] : [],
+          equipment:
+            (entry.equipment ? FEDB_EQUIPMENT[entry.equipment.toLowerCase()] : null) ??
+            inferEquipmentFromName(entry.name),
           sourceUrl: "https://github.com/yuhonas/free-exercise-db",
           sourceTitle: "free-exercise-db",
           sourceUploader: "",
@@ -252,7 +257,9 @@ async function importFreeExerciseDb(progress: CatalogProgress): Promise<void> {
           thumbFile: images[0] ?? null,
           source: "free-exercise-db",
           images,
-          force: entry.force ?? null,
+          // fedb leaves most stretches' force untagged; mark them static so
+          // the routine generator knows to skip them
+          force: entry.force ?? (entry.category === "stretching" ? "static" : null),
           mechanic: entry.mechanic ?? null,
           level: entry.level === "expert" ? "advanced" : entry.level ?? null,
           license: "Public domain (Unlicense)",
@@ -269,6 +276,8 @@ async function importFreeExerciseDb(progress: CatalogProgress): Promise<void> {
       saveProgress(progress);
     }
   });
+
+  healMissingEquipment(progress);
 }
 
 // ------------------------------------------------------------- wger.de
@@ -288,6 +297,55 @@ interface WgerInfoExercise {
     license_author: string | null;
   }[];
   images: { image: string; is_main: boolean }[];
+}
+
+// wger's community data sometimes files Spanish/German/French text under the
+// English language id, so trusting `language === 2` alone lets junk through.
+// Score the text against common foreign vs English words and reject clear misses.
+const FOREIGN_WORDS =
+  /\b(el|la|los|las|un[ao]?|unos|unas|con|para|hacia|desde|pierna[s]?|brazo[s]?|espalda|pecho|hombro[s]?|rodilla[s]?|codo[s]?|mano[s]?|cuello|cadera[s]?|ejercicio[s]?|repeticion(es)?|polea|mancuerna[s]?|barra|banco|maquina|sentadilla[s]?|pantorrilla[s]?|jalon(es)?|agarre|remo|remada|supin[ao]|pron[ao]|abiert[ao]|cerrad[ao]|estrech[ao]|caballero|sentad[ao]|tumbad[ao]|elevación|flexión|extensión|jalón|estiramiento|respiración|meditación|der|die|das|und|mit|für|übung(en)?|arme|beine|rücken|bauch|les|des|avec|jambe[s]?|bras|coude[s]?|épaule[s]?)\b/gi;
+const ENGLISH_WORDS =
+  /\b(the|and|with|your|you|to|of|in|on|for|from|keep|hold|slowly|lower|raise|lift|press|pull|push|return|repeat|position|starting|stand|sit|bench|barbell|dumbbell|cable|machine|arm[s]?|leg[s]?|back|chest|shoulder[s]?|knee[s]?|elbow[s]?|hand[s]?|hip[s]?|feet|foot|up|down)\b/gi;
+const FOREIGN_CHARS = /[ñáéíóúü¿¡äößàèùâêîôûç]/gi;
+
+// Both catalogs have entries whose equipment list is empty even though the
+// name says "Cable Fly" or "Smith Machine Press" — which would let them slip
+// into bodyweight-only workouts. Infer the gear from the name as a fallback.
+const NAME_EQUIPMENT: [RegExp, string][] = [
+  [/\bsmith\b/i, "Smith machine"],
+  [/\b(machine|lever(age)?)\b/i, "Machine"],
+  [/\b(cable|pulley|pulldown|pushdown|cross[- ]?over|woodchop)/i, "Cable"],
+  [/\bbands?\b/i, "Resistance band"],
+  [/\b(barbell|landmine)\b/i, "Barbell"],
+  [/\b([es]z[- ]?bar|curl bar)\b/i, "SZ-Bar"],
+  [/\bdumbbells?\b/i, "Dumbbell"],
+  [/\bkettlebells?\b/i, "Kettlebell"],
+  [/\bmedicine ball\b/i, "Medicine ball"],
+  [/\b(exercise|swiss|stability) ball\b/i, "Swiss Ball"],
+  [/\bbench\b/i, "Bench"],
+  [/\b(trx|suspension|jump rope|ropes?|plates?|bosu|sled)\b/i, "Other"],
+];
+
+export function inferEquipmentFromName(name: string): string[] {
+  const out: string[] = [];
+  for (const [re, eq] of NAME_EQUIPMENT) {
+    if (re.test(name) && !out.includes(eq)) out.push(eq);
+  }
+  return out;
+}
+
+function textLooksEnglish(text: string): boolean {
+  const foreign =
+    (text.match(FOREIGN_WORDS)?.length ?? 0) + (text.match(FOREIGN_CHARS)?.length ?? 0) * 2;
+  if (foreign < 2) return true;
+  const english = text.match(ENGLISH_WORDS)?.length ?? 0;
+  return english >= foreign;
+}
+
+/** The name must read as English on its own — it's what workout lists display —
+ *  and the entry as a whole must too. */
+export function looksEnglish(name: string, description: string): boolean {
+  return textLooksEnglish(name) && textLooksEnglish(`${name} ${description}`);
 }
 
 function stripHtml(html: string): string {
@@ -339,6 +397,11 @@ async function importWger(progress: CatalogProgress): Promise<void> {
         return;
       }
       const name = translation.name.trim();
+      const description = stripHtml(translation.description ?? "");
+      if (!looksEnglish(name, description)) {
+        progress.skipped++;
+        return;
+      }
       if (catalogKeyExists(catalogKey) || exerciseNameExists(name)) {
         progress.skipped++;
         return;
@@ -374,11 +437,13 @@ async function importWger(progress: CatalogProgress): Promise<void> {
         {
           name,
           aliases: [],
-          description: stripHtml(translation.description ?? ""),
+          description,
           category: entry.category?.name ?? categoryFromMuscles(primaryMuscles),
           primaryMuscles,
           secondaryMuscles,
-          equipment: mapWgerEquipment((entry.equipment ?? []).map((e) => e.name)),
+          equipment: ((eq) => (eq.length > 0 ? eq : inferEquipmentFromName(name)))(
+            mapWgerEquipment((entry.equipment ?? []).map((e) => e.name))
+          ),
           sourceUrl: `${WGER_BASE}/en/exercise/${entry.id}/view/`,
           sourceTitle: "wger.de exercise database",
           sourceUploader: "",
@@ -405,4 +470,35 @@ async function importWger(progress: CatalogProgress): Promise<void> {
       saveProgress(progress);
     }
   });
+
+  await cleanupNonEnglishWger(progress);
+  healMissingEquipment(progress);
+}
+
+/** Heal libraries imported before the language check: drop wger entries with non-English text. */
+async function cleanupNonEnglishWger(progress: CatalogProgress): Promise<void> {
+  const existing = listExercises({ source: "wger" }, 10_000);
+  for (const ex of existing) {
+    if (looksEnglish(ex.name, ex.description)) continue;
+    deleteExercise(ex.id);
+    await fs
+      .rm(path.join(config.dataDir, "exercises", ex.id), { recursive: true, force: true })
+      .catch(() => {});
+    progress.removed = (progress.removed ?? 0) + 1;
+  }
+  saveProgress(progress);
+}
+
+/** Heal catalog entries imported before equipment-from-name inference existed. */
+function healMissingEquipment(progress: CatalogProgress): void {
+  for (const source of ["free-exercise-db", "wger"] as const) {
+    for (const ex of listExercises({ source }, 10_000)) {
+      if (ex.equipment.length > 0) continue;
+      const inferred = inferEquipmentFromName(ex.name);
+      if (inferred.length === 0) continue;
+      updateExercise(ex.id, { equipment: inferred });
+      progress.fixed = (progress.fixed ?? 0) + 1;
+    }
+  }
+  saveProgress(progress);
 }

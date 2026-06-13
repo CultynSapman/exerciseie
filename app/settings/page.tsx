@@ -285,6 +285,8 @@ function CatalogCard({
       {progress?.status === "done" && (
         <p className="text-xs text-emerald-400">
           Done — {progress.imported} imported, {progress.skipped} skipped
+          {(progress.removed ?? 0) > 0 && `, ${progress.removed} low-quality entries removed`}
+          {(progress.fixed ?? 0) > 0 && `, ${progress.fixed} entries repaired`}
           {progress.errors.length > 0 && `, ${progress.errors.length} errors`}
           {progress.finishedAt && ` (${new Date(progress.finishedAt).toLocaleString()})`}
         </p>

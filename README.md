@@ -20,6 +20,8 @@ Seed it in one click from Settings with two catalogs (safe to re-run; duplicates
 - **[free-exercise-db](https://github.com/yuhonas/free-exercise-db)** — ~870 exercises, 2 demo photos + numbered instructions each, public domain.
 - **wger.de community database** — ~1,000 exercises from the [wger](https://github.com/wger-project/wger) project (CC-BY-SA 4.0; attribution is stored and shown on every imported exercise).
 
+Community catalogs are messy, so imports also run a quality pass — entries whose "English" text is actually Spanish/German/French are dropped, and exercises whose names reveal gear the data forgot to tag ("Cable Fly" with an empty equipment list) get their equipment fixed so they can't sneak into bodyweight-only workouts. Re-running an import applies these repairs to an existing library too.
+
 ## Daily workouts (the coach)
 
 Set your **goal** (strength / hypertrophy / endurance / general), **experience level**, **days per week**, **session length** and **available equipment** — the generator plans every session with a deterministic rules engine grounded in published meta-analyses (no LLM, fully explainable; every workout shows its "why"):
@@ -27,7 +29,8 @@ Set your **goal** (strength / hypertrophy / endurance / general), **experience l
 - **Splits**: 2–3 days → full body, 4 → upper/lower, 5–6 → push/pull/legs; every major muscle group lands on ≥2 days per cycle (training a muscle 2×/week beats 1×/week at equal volume — Schoenfeld et al. 2016).
 - **Volume**: weekly set targets per muscle group (~10–16 hard sets for major groups by level, smaller targets for minor ones), tracked over your trailing 7 days of *completed* work.
 - **Prescriptions**: goal-based rep ranges (strength 3–6, hypertrophy 6–12, endurance 12–20), rest times, and a reps-in-reserve target so sets stay close to failure where effective volume lives.
-- **Variety**: a recency penalty rotates exercise selection between sessions, a "neglect boost" pulls in whichever groups are behind target (that's how rear delts, forearms, calves and adductors don't get forgotten), favorites get picked more often, and any exercise can be swapped with one tap.
+- **Variety**: a recency penalty rotates exercise selection between sessions, a "neglect boost" pulls in whichever groups are behind target (that's how rear delts, forearms, calves and adductors don't get forgotten — a muscle group with zero volume in the trailing week may even earn an extra accessory slot), favorites get picked more often, and any exercise can be swapped with one tap.
+- **Only demonstrable exercises**: workouts never prescribe an exercise without a video clip or diagram, and never stretches or cardio entries from the catalogs.
 
 The **Today** page is rolling: open the app any day and it shows your next session in the rotation — check off exercises, finish or skip, and the next one is ready. Miss a day and nothing breaks.
 

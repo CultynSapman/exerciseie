@@ -312,14 +312,24 @@ export function creditSets(items: WorkoutItem[]): Record<string, number> {
 function resolveSlotGroup(
   slot: Slot,
   history: HistorySummary,
-  level: ExperienceLevel
+  level: ExperienceLevel,
+  rand: () => number
 ): MuscleGroup {
   if (!Array.isArray(slot.group)) return slot.group;
-  // rotation slot: pick the option furthest below its weekly target
+  // Rotation slot: pick the option furthest below its weekly target. For
+  // all-minor rotations ([Forearms, Neck]…) jitter breaks ties so equal
+  // options rotate week to week instead of the first in the list winning
+  // forever; major-group rotations stay strict to keep 2x/week frequency.
+  const allMinor = slot.group.every(
+    (g) => !(MUSCLE_GROUPS.find((mg) => mg.name === g)?.major ?? false)
+  );
   let best = slot.group[0];
   let bestDeficit = -Infinity;
   for (const g of slot.group) {
-    const deficit = weeklyTarget(g, level) - (history.weeklySetsByGroup[g] ?? 0);
+    const deficit =
+      weeklyTarget(g, level) -
+      (history.weeklySetsByGroup[g] ?? 0) +
+      (allMinor ? rand() * 0.75 : 0);
     if (deficit > bestDeficit) {
       bestDeficit = deficit;
       best = g;
@@ -385,8 +395,8 @@ export function generateWorkout(
   const focusGroups: MuscleGroup[] = [];
   let spent = 0;
 
-  const fillSlot = (group: MuscleGroup, kind: Slot["kind"]): boolean => {
-    if (items.length >= maxExercises) return false;
+  const fillSlot = (group: MuscleGroup, kind: Slot["kind"], extraCap = 0): boolean => {
+    if (items.length >= maxExercises + extraCap) return false;
     const pool = eligible.filter(
       (c) => !usedIds.has(c.id) && primaryGroups(c).includes(group)
     );
@@ -411,23 +421,35 @@ export function generateWorkout(
   };
 
   for (const slot of template.slots) {
-    fillSlot(resolveSlotGroup(slot, history, profile.level), slot.kind);
+    fillSlot(resolveSlotGroup(slot, history, profile.level, rand), slot.kind);
   }
 
   // Spend leftover time on the most neglected groups (catches minor groups
-  // the templates rotate through less often).
+  // the templates rotate through less often). Groups with zero volume in the
+  // trailing week come first, and one of them may squeeze past the exercise
+  // cap (except for beginners) so no muscle group is ever forgotten.
   const running = creditSets(items);
-  const deficits = MUSCLE_GROUPS.map((g) => ({
-    group: g.name,
-    deficit:
-      weeklyTarget(g.name, profile.level) -
-      ((history.weeklySetsByGroup[g.name] ?? 0) + (running[g.name] ?? 0)),
-  }))
+  const deficits = MUSCLE_GROUPS.map((g) => {
+    const trained =
+      (history.weeklySetsByGroup[g.name] ?? 0) + (running[g.name] ?? 0);
+    return {
+      group: g.name,
+      deficit: weeklyTarget(g.name, profile.level) - trained,
+      untrained: trained === 0,
+    };
+  })
     .filter((d) => d.deficit > 2)
-    .sort((a, b) => b.deficit - a.deficit);
-  for (const d of deficits.slice(0, 3)) {
-    if (items.length >= maxExercises) break;
-    fillSlot(d.group, "any");
+    .sort(
+      (a, b) => Number(b.untrained) - Number(a.untrained) || b.deficit - a.deficit
+    );
+  let extraUsed = false;
+  for (const d of deficits.slice(0, 4)) {
+    const allowExtra = d.untrained && !extraUsed && profile.level !== "beginner";
+    const before = items.length;
+    fillSlot(d.group, "any", allowExtra ? 1 : 0);
+    if (allowExtra && items.length > before && items.length > maxExercises) {
+      extraUsed = true;
+    }
   }
 
   const neglected = deficits

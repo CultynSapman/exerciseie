@@ -30,6 +30,9 @@ export interface ExtractedExercise {
   primaryMuscles: string[];
   secondaryMuscles: string[];
   equipment: string[];
+  mechanic: string | null;
+  force: string | null;
+  level: string | null;
   startSec: number;
   endSec: number;
   matches: ExerciseMatch[];
@@ -148,6 +151,10 @@ export interface CatalogProgress {
   done: number;
   imported: number;
   skipped: number;
+  /** Previously-imported entries removed by quality cleanup (e.g. non-English text). */
+  removed?: number;
+  /** Previously-imported entries repaired in place (e.g. equipment inferred from the name). */
+  fixed?: number;
   errors: string[];
   finishedAt: string | null;
 }

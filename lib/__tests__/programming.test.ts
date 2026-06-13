@@ -176,6 +176,40 @@ test("minor groups accumulate volume over a cycle", () => {
   );
 });
 
+test("every muscle group is trained within two weeks (3-5 day splits)", () => {
+  for (const days of [3, 4, 5]) {
+    const profile = profileWith({ daysPerWeek: days, sessionMinutes: 75 });
+    const history = emptyHistory();
+    const trained = new Set<string>();
+    // rolling window of the last `days` workouts ≈ the trailing-7-days credit
+    const window: WorkoutItem[][] = [];
+    for (let i = 0; i < days * 2; i++) {
+      const w = generateWorkout(profile, POOL, history, 1000 * days + i);
+      for (const item of w.items) for (const g of item.groups) trained.add(g);
+
+      window.push(w.items);
+      if (window.length > days) window.shift();
+      history.lastSeq = w.seq;
+      const ids = new Map<string, number>();
+      for (const [id, ago] of history.recentExerciseIds) ids.set(id, ago + 1);
+      for (const item of w.items) ids.set(item.exerciseId, 1);
+      history.recentExerciseIds = ids;
+      history.weeklySetsByGroup = {};
+      for (const items of window) {
+        for (const [g, s] of Object.entries(creditSets(items))) {
+          history.weeklySetsByGroup[g] = (history.weeklySetsByGroup[g] ?? 0) + s;
+        }
+      }
+    }
+    for (const g of MUSCLE_GROUPS) {
+      assert.ok(
+        trained.has(g.name),
+        `${g.name} never trained across 2 weeks of the ${days}-day split`
+      );
+    }
+  }
+});
+
 test("rep ranges and set counts follow the goal", () => {
   const cases: [Profile["goal"], number, number][] = [
     ["strength", 3, 6],

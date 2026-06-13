@@ -21,9 +21,20 @@ import type { LibraryExercise, Workout } from "./types";
 /** A workout needs at least this many eligible exercises to be worth generating. */
 const MIN_POOL = 12;
 
-/** Strength programming excludes stretches (force=static) and pure cardio entries. */
+/**
+ * Strength programming excludes stretches (force=static, but catalogs often
+ * leave stretches untagged, so the name is checked too), pure cardio entries,
+ * and anything without a clip or diagram — a workout shouldn't prescribe an
+ * exercise you can't see how to perform.
+ */
 function isProgrammable(e: LibraryExercise): boolean {
-  return e.force !== "static" && e.category !== "Cardio";
+  const hasMedia = Boolean(e.clipFile || e.thumbFile || e.images.length > 0);
+  return (
+    hasMedia &&
+    e.force !== "static" &&
+    e.category !== "Cardio" &&
+    !/\bstretch(es|ing)?\b/i.test(e.name)
+  );
 }
 
 function toCandidate(e: LibraryExercise): CandidateExercise {

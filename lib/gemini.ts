@@ -17,6 +17,9 @@ export interface RawExtractedExercise {
   primaryMuscles?: string[];
   secondaryMuscles?: string[];
   equipment?: string[];
+  mechanic?: string;
+  force?: string;
+  level?: string;
   startSec: number;
   endSec: number;
 }
@@ -47,6 +50,21 @@ const responseSchema: Schema = {
           primaryMuscles: { type: Type.ARRAY, items: { type: Type.STRING } },
           secondaryMuscles: { type: Type.ARRAY, items: { type: Type.STRING } },
           equipment: { type: Type.ARRAY, items: { type: Type.STRING } },
+          mechanic: {
+            type: Type.STRING,
+            description:
+              "'compound' if the movement spans multiple joints (squat, press, row), 'isolation' if a single joint does the work (curl, fly, calf raise)",
+          },
+          force: {
+            type: Type.STRING,
+            description:
+              "'push', 'pull', or 'static' for isometric holds and stretches",
+          },
+          level: {
+            type: Type.STRING,
+            description:
+              "Skill required to perform safely: 'beginner', 'intermediate', or 'advanced'",
+          },
           startSec: {
             type: Type.NUMBER,
             description: "Second in the video where the demonstration of this exercise starts",
@@ -81,6 +99,9 @@ function buildPrompt(metadata: VideoMetadata): string {
     `- category: exactly one of: ${categories}.`,
     `- primaryMuscles / secondaryMuscles: pick only from this list, using the exact names as written (the part before any parenthesis): ${muscles}. Leave empty if unsure.`,
     `- equipment: pick only from this list: ${equipment}. Use an empty list for bodyweight exercises.`,
+    "- mechanic: 'compound' for multi-joint movements, 'isolation' for single-joint movements.",
+    "- force: 'push', 'pull', or 'static' (isometric holds and stretches).",
+    "- level: 'beginner', 'intermediate' or 'advanced' — how much skill the movement demands.",
     "- startSec / endSec: the time range (in seconds from the start of the video) where this exercise is being demonstrated, so the segment can be clipped out as a reference video.",
     "",
     "Context from the video post:",
